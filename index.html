@@ -196,10 +196,27 @@
   .more .tag { color: var(--tabc); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
   .more .go { color: var(--tabc); cursor: pointer; margin-left: auto; }
   .more .go:hover { text-decoration: underline; }
+  /* lava lamp background (WebGL) and its on/off button */
+  #lava { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; display: none; }
+  body.lava #lava { display: block; }
+  #lavabtn {
+    position: fixed; right: 14px; bottom: 14px; z-index: 6; width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center; cursor: pointer; padding: 0;
+    background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--line);
+    opacity: .45; transition: opacity .15s, border-color .15s;
+  }
+  #lavabtn:hover, #lavabtn:focus-visible { opacity: 1; border-color: var(--accent); outline: none; }
+  #lavabtn svg { width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 1.8; }
+  body.lava #lavabtn svg { fill: var(--accent); stroke: var(--accent); }
+  #lavabtn[hidden] { display: none; }
   @media (prefers-reduced-motion: reduce) { .card, .card *, #links a { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
+<canvas id="lava" aria-hidden="true"></canvas>
+<button id="lavabtn" hidden title="Lava lamp background" aria-label="Lava lamp background" aria-pressed="false">
+  <svg viewBox="0 0 24 24"><path d="M9 3h6l-1 4c2.5 1.5 4 4 4 7a6 6 0 0 1-12 0c0-3 1.5-5.5 4-7z"/></svg>
+</button>
 <header>
   <div id="clock"></div>
   <div id="date"></div>
@@ -372,6 +389,123 @@ async function nowPlaying() {
   if (t.cover && img.src !== t.cover) img.src = t.cover;
 }
 if (NP.video || NP.pear) { nowPlaying(); setTimeout(nowPlaying, 1500); setInterval(nowPlaying, 4000); }
+
+// lava lamp background: WebGL port of the Plasma "Lava Lamp" wallpaper. Colours drift through
+// the moods on the wall clock, so it matches the desktop version at the same hour.
+const LAVA = { speed: 1, brightness: 1, cycleHours: 6, mood: "", fps: 30, scale: 0.5, ...CFG.lava };
+const LAVA_KEY = "startpage.lava";
+const MOODS = [  // [name, base, A, B, C]
+  ["Nebula", "#100f2a", "#7a2a9e", "#c2306a", "#2a6f9e"], ["Deep Sea", "#0a1422", "#1e5f8c", "#2a86b8", "#264a8a"],
+  ["Aurora", "#0a161a", "#1b7f86", "#3fa36b", "#4a3f9e"], ["Twilight", "#141024", "#5a3fae", "#2f6fb8", "#a0407a"],
+  ["Ember", "#150c14", "#a8321e", "#c0602a", "#7a1f4c"], ["Rose Dusk", "#160e1c", "#b0406a", "#7d3f9e", "#c0664a"],
+  ["Midnight Teal", "#081418", "#1f7a8a", "#1e4f7a", "#2e8f80"], ["Ultraviolet", "#0f0c20", "#6a2ab8", "#3a3aa8", "#b0308a"],
+  ["Smoke & Ice", "#0e1013", "#3a5a78", "#5a5a80", "#2a6f8a"],
+];
+const LAVA_FRAG = `precision mediump float;
+uniform float time, brightness, sizeScale, haze;
+uniform vec2 resolution;
+uniform vec3 base, colA, colB, colC;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void main() {
+  vec2 uv = vec2(gl_FragCoord.x, resolution.y - gl_FragCoord.y) / resolution;
+  float s = min(resolution.x, resolution.y);
+  vec2 ext = resolution / s, p = uv * ext;   // units of the short side: blobs stay round
+  float field = 0.0;
+  vec3 tint = vec3(0.0);
+  for (int i = 0; i < 9; i++) {
+    float fi = float(i);
+    float r = (0.10 + 0.07 * fract(fi * 0.618)) * sizeScale;
+    float sp = 0.035 + 0.02 * fract(fi * 0.377);   // slow rise and fall like wax, lazy sideways drift
+    float y = (0.5 + 0.5 * sin(time * sp + fi * 2.1)) * (ext.y + 0.4) - 0.2;
+    float x = (0.5 + 0.42 * sin(time * sp * 0.7 + fi * 1.3) * cos(time * 0.011 + fi)) * ext.x;
+    vec2 d = p - vec2(x, y);
+    d.y *= 1.0 + 0.25 * sin(time * 0.05 + fi);    // squish as they move
+    float f = r * r / (dot(d, d) + 1e-4);
+    field += f;
+    float k = mod(fi, 3.0);
+    tint += (k < 0.5 ? colA : (k < 1.5 ? colB : colC)) * f;
+  }
+  tint /= max(field, 1e-4);
+  float body = smoothstep(0.92, 1.08, field);
+  float glow = smoothstep(0.05, 0.9, field) * haze;
+  float core = clamp((field - 1.0) * 0.4, 0.0, 1.0);
+  vec3 col = mix(base, tint * 0.4, glow);
+  col = mix(col, tint * (0.5 + 0.3 * core), body) * brightness;
+  vec2 v = uv - 0.5;
+  col *= 1.0 - 0.35 * dot(v, v);                                  // vignette
+  col += (hash(gl_FragCoord.xy + fract(time)) - 0.5) / 255.0 * 1.5;  // grain, so dark gradients don't band
+  gl_FragColor = vec4(col, 1.0);
+}`;
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const lava = { gl: null, u: {}, raf: 0, time: Math.random() * 1000, last: 0, look: null, lookAt: 0 };
+function lavaLook() {  // colours and slow structural wander, recomputed every 2 s like the wallpaper
+  const h = Date.now() / 3600000, fixed = MOODS.findIndex(m => m[0].toLowerCase() === String(LAVA.mood).toLowerCase());
+  let pal;
+  if (fixed >= 0) pal = MOODS[fixed].slice(1).map(rgb);
+  else {
+    const pos = h / Math.max(0.1, LAVA.cycleHours) * MOODS.length, i = Math.floor(pos) % MOODS.length;
+    let t = pos - Math.floor(pos); t = t * t * t * (t * (t * 6 - 15) + 10);  // smootherstep
+    const a = MOODS[i].slice(1).map(rgb), b = MOODS[(i + 1) % MOODS.length].slice(1).map(rgb);
+    pal = a.map((c, k) => c.map((x, j) => x + (b[k][j] - x) * t));
+  }
+  const w = (period, phase) => Math.sin(2 * Math.PI * h / period + phase);
+  return { pal, sizeScale: 1 + 0.2 * w(2.3, 0) + 0.08 * w(0.77, 1), haze: 0.2 + 0.08 * w(3.1, 2), flow: 1 + 0.35 * w(1.7, 4) };
+}
+function lavaInit() {
+  const c = $("#lava"), gl = c.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power" });
+  if (!gl) return false;
+  const sh = (type, code) => { const s = gl.createShader(type); gl.shaderSource(s, code); gl.compileShader(s); return s; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }"));
+  gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, LAVA_FRAG));
+  gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { console.warn("lava:", gl.getProgramInfoLog(pr)); return false; }
+  gl.useProgram(pr);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);  // one triangle covers the screen
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  for (const n of ["time", "brightness", "sizeScale", "haze", "resolution", "base", "colA", "colB", "colC"]) lava.u[n] = gl.getUniformLocation(pr, n);
+  lava.gl = gl;
+  return true;
+}
+function lavaDraw() {
+  const gl = lava.gl, c = gl.canvas, u = lava.u;
+  const w = Math.max(1, Math.round(innerWidth * LAVA.scale)), h = Math.max(1, Math.round(innerHeight * LAVA.scale));
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; gl.viewport(0, 0, w, h); }
+  if (!lava.look || Date.now() - lava.lookAt > 2000) { lava.look = lavaLook(); lava.lookAt = Date.now(); }
+  const L = lava.look;
+  gl.uniform1f(u.time, lava.time); gl.uniform1f(u.brightness, LAVA.brightness);
+  gl.uniform1f(u.sizeScale, L.sizeScale); gl.uniform1f(u.haze, L.haze);
+  gl.uniform2f(u.resolution, w, h);
+  ["base", "colA", "colB", "colC"].forEach((n, i) => gl.uniform3fv(u[n], L.pal[i]));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function lavaFrame(now) {
+  lava.raf = requestAnimationFrame(lavaFrame);  // browsers stop this while the tab is hidden
+  if (lava.last && now - lava.last < 1000 / LAVA.fps - 2) return;
+  if (lava.last) lava.time += Math.min(now - lava.last, 100) / 1000 * LAVA.speed * (lava.look?.flow || 1);
+  lava.last = now;
+  lavaDraw();
+}
+function lavaSet(on) {
+  if (on && !lava.gl && !lavaInit()) { $("#lavabtn").hidden = true; return; }  // no WebGL: no button either
+  document.body.classList.toggle("lava", on);
+  $("#lavabtn").setAttribute("aria-pressed", on);
+  cancelAnimationFrame(lava.raf); lava.last = 0;
+  if (!on) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { lavaDraw(); addEventListener("resize", () => document.body.classList.contains("lava") && lavaDraw()); }
+  else lava.raf = requestAnimationFrame(lavaFrame);
+}
+{
+  let saved = null; try { saved = localStorage.getItem(LAVA_KEY); } catch {}
+  $("#lavabtn").hidden = false;
+  $("#lavabtn").onclick = () => {
+    const on = !document.body.classList.contains("lava");
+    try { localStorage.setItem(LAVA_KEY, on ? "on" : "off"); } catch {}
+    lavaSet(on);
+  };
+  lavaSet(saved ? saved === "on" : LAVA.on !== false);
+}
 
 // news
 const TAB_KEY = "startpage.newsTab";

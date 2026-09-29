@@ -23,6 +23,12 @@ window.STARTPAGE = {
   seconds: true,            // the small seconds after the minutes
   locale: "",               // date language, e.g. "en-GB", "fr-FR"; "" follows the browser
 
+  // Lava lamp background. The round button at the bottom right turns it on and off, and the page
+  // remembers that; `on` is only the starting state. mood: "" drifts through all nine over
+  // cycleHours, or name one: Nebula, Deep Sea, Aurora, Twilight, Ember, Rose Dusk,
+  // Midnight Teal, Ultraviolet, Smoke & Ice.
+  lava: { on: true, mood: "", cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
+
   // Optional "now playing" card. Endpoints that answer JSON, polled every 4 s:
   //   video: { id, title, author, url, cover } (obs-pear-remote's extras/serve.py serves /mpris.json)
   //   pear:  Pear Desktop's Amuse plugin, http://127.0.0.1:9863/query

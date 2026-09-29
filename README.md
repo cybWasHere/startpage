@@ -3,7 +3,7 @@
 # startpage
 
 **A new-tab page for Firefox: a big clock, the weather, your sites on single keys, and news cards
-from any RSS feed.**<br>
+from any RSS feed, over a slow lava lamp.**<br>
 One HTML file. No build, no extension, no account. Python only to fetch the headlines.
 
 [![Firefox](https://img.shields.io/badge/Firefox-new%20tab%20%2B%20homepage-ff7139?logo=firefoxbrowser&logoColor=white)](#quick-start)
@@ -29,6 +29,9 @@ One HTML file. No build, no extension, no account. Python only to fetch the head
 - **News cards in tabs**, from whatever RSS or Atom feeds you list. Every card gets a picture
   (from the feed, or the article's preview image when the feed has none), and hovering it shows the
   summary. The page picks how many rows fit your screen, so it never scrolls.
+- **A lava lamp behind it all**: slow wax blobs in WebGL, drifting through nine dark colour moods
+  over six hours. The round button at the bottom right turns it off and on, and the page remembers.
+  It's a port of a KDE Plasma wallpaper, so the page and the desktop can match.
 - **Optional "now playing" card** for [Pear Desktop](https://github.com/pear-devs/pear-desktop) or
   a browser video, with [obs-pear-remote](https://github.com/cybWasHere/obs-pear-remote)'s server.
 
@@ -120,6 +123,7 @@ window.STARTPAGE = {
   clock24: true,               // false for 1:42 pm
   seconds: true,
   locale: "",                  // date language like "fr-FR"; "" follows the browser
+  lava: { on: true, mood: "", cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
   nowPlaying: null,
 };
 ```
@@ -166,6 +170,9 @@ with the installer.
 - **What it talks to:** Open-Meteo for weather and the city lookup (the result is remembered), the
   feeds you list, the sites' images for the cards (sent without a referrer), and DuckDuckGo's icon
   service for the dock icons. No analytics, no accounts.
+- **The lava lamp** renders at half resolution and 30 fps (it's all soft gradients, so it looks the
+  same), and stops whenever the tab is in the background. With *reduce motion* set in your system,
+  it draws one still frame. No WebGL? The button just doesn't appear.
 - **Updating:** `git pull`. Your `config.js` and `feeds.json` are untouched. Rerun `install.py`
   only if you moved the folder.
 - **Uninstall:** `python3 install.py --uninstall`, restart Firefox, delete the folder.
