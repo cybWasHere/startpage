@@ -30,7 +30,8 @@ One HTML file. No build, no extension, no account. Python only to fetch the head
   (from the feed, or the article's preview image when the feed has none), and hovering it shows the
   summary. The page picks how many rows fit your screen, so it never scrolls.
 - **A lava lamp behind it all**: slow wax blobs in WebGL, drifting through nine dark colour moods
-  over six hours. The round button at the bottom right turns it off and on, and the page remembers.
+  over six hours. The little lamp at the bottom right opens a menu: pick one mood, let it drift, or
+  turn it off. A new mood melts in, and the page remembers your pick.
   It's a port of a KDE Plasma wallpaper, so the page and the desktop can match.
 - **Optional "now playing" card** for [Pear Desktop](https://github.com/pear-devs/pear-desktop) or
   a browser video, with [obs-pear-remote](https://github.com/cybWasHere/obs-pear-remote)'s server.

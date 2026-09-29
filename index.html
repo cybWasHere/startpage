@@ -199,24 +199,47 @@
   /* lava lamp background (WebGL) and its on/off button */
   #lava { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; display: none; }
   body.lava #lava { display: block; }
+  #lavaui { position: fixed; right: 14px; bottom: 14px; z-index: 6; }
+  #lavaui[hidden] { display: none; }
   #lavabtn {
-    position: fixed; right: 14px; bottom: 14px; z-index: 6; width: 34px; height: 34px; border-radius: 50%;
-    display: grid; place-items: center; cursor: pointer; padding: 0;
+    width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; padding: 0;
     background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--line);
-    opacity: .45; transition: opacity .15s, border-color .15s;
+    opacity: .45; transition: opacity .15s, border-color .15s, transform .15s;
   }
-  #lavabtn:hover, #lavabtn:focus-visible { opacity: 1; border-color: var(--accent); outline: none; }
-  #lavabtn svg { width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 1.8; }
-  body.lava #lavabtn svg { fill: var(--accent); stroke: var(--accent); }
-  #lavabtn[hidden] { display: none; }
+  #lavabtn:hover, #lavabtn:focus-visible, #lavaui.open #lavabtn { opacity: 1; border-color: var(--accent); outline: none; }
+  #lavabtn:active { transform: scale(.92); }
+  #lavabtn svg { width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 1.8; transition: fill .6s; }
+  body.lava #lavabtn svg { fill: var(--lamp, var(--accent)); stroke: color-mix(in srgb, var(--lamp, var(--accent)) 55%, #fff); }
+  #lavamenu {
+    position: absolute; right: 0; bottom: calc(100% + 8px); width: 216px; max-height: calc(100vh - 80px); overflow: auto;
+    padding: 8px 6px 6px; background: #1e2124; border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.5); transform-origin: bottom right; animation: pop .16s ease-out;
+  }
+  #lavamenu[hidden] { display: none; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.94); } }
+  #lavamenu h3 { margin: 2px 8px 6px; font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+  #lavamenu hr { border: 0; border-top: 1px solid var(--line); margin: 5px 4px; }
+  #lavamenu button {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border: 0; border-radius: 8px;
+    background: none; color: var(--muted); font: 500 13px/1.2 inherit; font-family: inherit; text-align: left; cursor: pointer;
+  }
+  #lavamenu button:hover, #lavamenu button:focus-visible { background: var(--hover); color: var(--text); outline: none; }
+  #lavamenu button[aria-checked="true"] { color: var(--text); font-weight: 600; }
+  #lavamenu .sw { width: 20px; height: 20px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); transition: transform .15s; }
+  #lavamenu button:hover .sw { transform: scale(1.15); }
+  #lavamenu .ck { margin-left: auto; width: 14px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+  #lavamenu button[aria-checked="true"] .ck { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { .card, .card *, #links a { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
 <canvas id="lava" aria-hidden="true"></canvas>
-<button id="lavabtn" hidden title="Lava lamp background" aria-label="Lava lamp background" aria-pressed="false">
-  <svg viewBox="0 0 24 24"><path d="M9 3h6l-1 4c2.5 1.5 4 4 4 7a6 6 0 0 1-12 0c0-3 1.5-5.5 4-7z"/></svg>
-</button>
+<div id="lavaui" hidden>
+  <div id="lavamenu" role="menu" aria-label="Background" hidden><h3>background</h3></div>
+  <button id="lavabtn" title="Background" aria-label="Background" aria-haspopup="menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24"><path d="M9 3h6l-1 4c2.5 1.5 4 4 4 7a6 6 0 0 1-12 0c0-3 1.5-5.5 4-7z"/></svg>
+  </button>
+</div>
 <header>
   <div id="clock"></div>
   <div id="date"></div>
@@ -437,9 +460,11 @@ void main() {
   gl_FragColor = vec4(col, 1.0);
 }`;
 const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
-const lava = { gl: null, u: {}, raf: 0, time: Math.random() * 1000, last: 0, look: null, lookAt: 0 };
+const lava = { gl: null, u: {}, raf: 0, time: Math.random() * 1000, last: 0, look: null, lookAt: 0,
+  on: false, mood: "drift", fade: null, shown: null };  // mood: "drift" or a MOODS name
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function lavaLook() {  // colours and slow structural wander, recomputed every 2 s like the wallpaper
-  const h = Date.now() / 3600000, fixed = MOODS.findIndex(m => m[0].toLowerCase() === String(LAVA.mood).toLowerCase());
+  const h = Date.now() / 3600000, fixed = MOODS.findIndex(m => m[0] === lava.mood);
   let pal;
   if (fixed >= 0) pal = MOODS[fixed].slice(1).map(rgb);
   else {
@@ -472,12 +497,22 @@ function lavaDraw() {
   const gl = lava.gl, c = gl.canvas, u = lava.u;
   const w = Math.max(1, Math.round(innerWidth * LAVA.scale)), h = Math.max(1, Math.round(innerHeight * LAVA.scale));
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; gl.viewport(0, 0, w, h); }
-  if (!lava.look || Date.now() - lava.lookAt > 2000) { lava.look = lavaLook(); lava.lookAt = Date.now(); }
+  if (!lava.look || Date.now() - lava.lookAt > 2000) {
+    lava.look = lavaLook(); lava.lookAt = Date.now();
+    $("#lavabtn").style.setProperty("--lamp", `rgb(${lava.look.pal[1].map(x => Math.round(x * 255))})`);  // the lamp icon wears the mood
+  }
   const L = lava.look;
+  let pal = L.pal;
+  if (lava.fade) {  // a newly picked mood melts in instead of snapping
+    const t = (performance.now() - lava.fade.at) / 1200, s = t * t * (3 - 2 * t);
+    if (t >= 1) lava.fade = null;
+    else pal = lava.fade.from.map((c, k) => c.map((x, j) => x + (pal[k][j] - x) * s));
+  }
+  lava.shown = pal;
   gl.uniform1f(u.time, lava.time); gl.uniform1f(u.brightness, LAVA.brightness);
   gl.uniform1f(u.sizeScale, L.sizeScale); gl.uniform1f(u.haze, L.haze);
   gl.uniform2f(u.resolution, w, h);
-  ["base", "colA", "colB", "colC"].forEach((n, i) => gl.uniform3fv(u[n], L.pal[i]));
+  ["base", "colA", "colB", "colC"].forEach((n, i) => gl.uniform3fv(u[n], pal[i]));
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 function lavaFrame(now) {
@@ -488,23 +523,65 @@ function lavaFrame(now) {
   lavaDraw();
 }
 function lavaSet(on) {
-  if (on && !lava.gl && !lavaInit()) { $("#lavabtn").hidden = true; return; }  // no WebGL: no button either
+  if (on && !lava.gl && !lavaInit()) { $("#lavaui").hidden = true; return; }  // no WebGL: no button either
+  lava.on = on;
   document.body.classList.toggle("lava", on);
-  $("#lavabtn").setAttribute("aria-pressed", on);
   cancelAnimationFrame(lava.raf); lava.last = 0;
   if (!on) return;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { lavaDraw(); addEventListener("resize", () => document.body.classList.contains("lava") && lavaDraw()); }
+  if (REDUCED) lavaDraw();
   else lava.raf = requestAnimationFrame(lavaFrame);
 }
+if (REDUCED) addEventListener("resize", () => lava.on && lavaDraw());
+// choice: "off", "drift" or a mood name; remembered per browser
+function lavaChoose(choice, save) {
+  if (choice !== "off") {
+    if (lava.on && lava.shown && choice !== lava.mood && !REDUCED) lava.fade = { from: lava.shown, at: performance.now() };
+    lava.mood = choice; lava.look = null;
+  }
+  lavaSet(choice !== "off");
+  for (const b of document.querySelectorAll("#lavamenu button")) b.setAttribute("aria-checked", b.dataset.v === choice);
+  if (save) try { localStorage.setItem(LAVA_KEY, choice); } catch {}
+}
 {
+  const ui = $("#lavaui"), menu = $("#lavamenu"), btn = $("#lavabtn");
+  // swatches: three soft blobs of the mood's colours on its base
+  const swatch = m => `radial-gradient(circle at 30% 34%, ${m[2]} 0 20%, transparent 50%), radial-gradient(circle at 70% 60%, ${m[3]} 0 18%, transparent 48%), ` +
+    `radial-gradient(circle at 36% 80%, ${m[4]} 0 10%, transparent 38%), ${m[1]}`;
+  const items = [["off", "Off", "linear-gradient(135deg, transparent 44%, var(--dim) 44% 56%, transparent 56%), var(--bg)"],
+    ["drift", "Drift through all", `conic-gradient(${MOODS.map(m => m[2]).join(", ")}, ${MOODS[0][2]})`], null,
+    ...MOODS.map(m => [m[0], m[0], swatch(m)])];
+  for (const it of items) {
+    if (!it) { menu.append(document.createElement("hr")); continue; }
+    const b = document.createElement("button");
+    b.setAttribute("role", "menuitemradio"); b.dataset.v = it[0];
+    b.innerHTML = `<i class="sw"></i><span></span><svg class="ck" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`;
+    b.querySelector(".sw").style.background = it[2];
+    b.querySelector("span").textContent = it[1];
+    b.onclick = () => { lavaChoose(it[0], true); close(); btn.focus(); };
+    menu.append(b);
+  }
+  const buttons = () => [...menu.querySelectorAll("button")];
+  function open() {
+    menu.hidden = false; ui.classList.add("open"); btn.setAttribute("aria-expanded", "true");
+    (menu.querySelector('[aria-checked="true"]') || buttons()[0]).focus();
+  }
+  function close() { menu.hidden = true; ui.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); }
+  btn.onclick = () => menu.hidden ? open() : close();
+  document.addEventListener("pointerdown", e => { if (!menu.hidden && !ui.contains(e.target)) close(); });
+  ui.addEventListener("keydown", e => {
+    e.stopPropagation();  // letters here aren't link shortcuts
+    const bs = buttons(), i = bs.indexOf(document.activeElement);
+    if (e.key === "Escape") { close(); btn.focus(); }
+    else if (menu.hidden) return;
+    else if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); bs[(i + (e.key === "ArrowDown" ? 1 : -1) + bs.length) % bs.length].focus(); }
+    else if (e.key === "Home" || e.key === "End") { e.preventDefault(); bs[e.key === "Home" ? 0 : bs.length - 1].focus(); }
+  });
   let saved = null; try { saved = localStorage.getItem(LAVA_KEY); } catch {}
-  $("#lavabtn").hidden = false;
-  $("#lavabtn").onclick = () => {
-    const on = !document.body.classList.contains("lava");
-    try { localStorage.setItem(LAVA_KEY, on ? "on" : "off"); } catch {}
-    lavaSet(on);
-  };
-  lavaSet(saved ? saved === "on" : LAVA.on !== false);
+  if (saved === "on") saved = "drift";  // before the mood menu, the button only stored on/off
+  const valid = v => v === "off" || v === "drift" || MOODS.some(m => m[0] === v);
+  const cfgMood = MOODS.find(m => m[0].toLowerCase() === String(LAVA.mood).toLowerCase())?.[0];
+  ui.hidden = false;
+  lavaChoose(valid(saved) ? saved : LAVA.on === false ? "off" : cfgMood || "drift", false);
 }
 
 // news

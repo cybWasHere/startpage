@@ -23,9 +23,9 @@ window.STARTPAGE = {
   seconds: true,            // the small seconds after the minutes
   locale: "",               // date language, e.g. "en-GB", "fr-FR"; "" follows the browser
 
-  // Lava lamp background. The round button at the bottom right turns it on and off, and the page
-  // remembers that; `on` is only the starting state. mood: "" drifts through all nine over
-  // cycleHours, or name one: Nebula, Deep Sea, Aurora, Twilight, Ember, Rose Dusk,
+  // Lava lamp background. The lamp button at the bottom right picks a mood or turns it off, and the
+  // page remembers that pick; these are only the starting values. mood: "" drifts through all nine
+  // over cycleHours, or name one: Nebula, Deep Sea, Aurora, Twilight, Ember, Rose Dusk,
   // Midnight Teal, Ultraviolet, Smoke & Ice.
   lava: { on: true, mood: "", cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
 
