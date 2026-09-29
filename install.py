@@ -59,6 +59,12 @@ def fetch_now():
     say("headlines fetched" if r.returncode == 0 else "no headlines yet; the schedule will retry", "+" if r.returncode == 0 else "!")
 
 
+def write_fresh(path, text, **kw):
+    """Replace the file itself: an old `systemctl link` symlink would otherwise be written through."""
+    path.unlink(missing_ok=True)
+    path.write_text(text, **kw)
+
+
 def quiet_python():
     """On Windows, pythonw.exe runs without flashing a console window every 20 minutes."""
     exe = Path(sys.executable)
@@ -83,21 +89,22 @@ def schedule():
             return
         d = systemd_dir()
         d.mkdir(parents=True, exist_ok=True)
-        (d / f"{NAME}.service").write_text(
+        write_fresh(d / f"{NAME}.service",
             f"[Unit]\nDescription=Refresh start page headlines (news.js)\nAfter=network-online.target\n\n"
             f"[Service]\nType=oneshot\nExecStart=\"{sys.executable}\" \"{NEWS}\"\n")
-        (d / f"{NAME}.timer").write_text(
+        write_fresh(d / f"{NAME}.timer",
             "[Unit]\nDescription=Refresh start page headlines every 20 minutes\n\n"
             "[Timer]\nOnBootSec=1min\nOnUnitActiveSec=20min\nPersistent=true\n\n"
             "[Install]\nWantedBy=timers.target\n")
         run("systemctl", "--user", "daemon-reload")
+        run("systemctl", "--user", "disable", f"{NAME}.timer", check=False)  # drops stale enable links
         run("systemctl", "--user", "enable", "--now", f"{NAME}.timer")
         say(f"systemd user timer {NAME}.timer runs news.py every 20 minutes", "+")
     elif MAC:
         p = launchd_plist()
         p.parent.mkdir(parents=True, exist_ok=True)
         label = p.stem
-        p.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+        write_fresh(p, f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>{label}</string>
@@ -232,6 +239,9 @@ def ours(path):
 def write_firefox(ff_dir, page_uri, force):
     """Runs with admin rights when the folder needs them. Returns 0 on success."""
     files = {ff_dir / rel: text for rel, text in autoconfig_files(page_uri).items()}
+    if all(p.exists() and p.read_text(encoding="utf-8", errors="replace") == t for p, t in files.items()):
+        say(f"Firefox at {ff_dir} is already set up")
+        return 0
     foreign = [p for p in files if not ours(p)]
     if foreign and not force:
         for p in foreign:
