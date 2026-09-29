@@ -145,6 +145,8 @@ def installed():
                 break
             time.sleep(0.5)
         check(url == install.PAGE.as_uri(), f"Firefox starts on the page ({url})")
+        if url != install.PAGE.as_uri():
+            return
         time.sleep(3)
         links = m.js("return document.querySelectorAll('#links a').length")
         tabs = m.js("return [...document.querySelectorAll('#tabs button')].map(b => b.dataset.tab)")
@@ -165,7 +167,10 @@ def uninstalled():
     check(not scheduled(), "schedule removed")
     for d in install.firefox_dirs()[0]:
         for rel in ("mozilla.cfg", "defaults/pref/autoconfig.js"):
-            check(not (d / rel).exists(), f"{d / rel} removed")
+            p = d / rel
+            # gone, or the file that was there before --force came back from its .bak
+            back = p.exists() and install.MARK not in p.read_text(encoding="utf-8", errors="replace")
+            check(not p.exists() or back, f"{p} removed" + (" (the runner's own file restored)" if back else ""))
 
 
 if __name__ == "__main__":

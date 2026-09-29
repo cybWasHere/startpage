@@ -282,6 +282,7 @@ def elevated(args):
 
 
 def firefox(uninstall, force, only_dir=None):
+    """Returns how many Firefox folders couldn't be set up."""
     dirs, notes = firefox_dirs()
     if only_dir:
         dirs = [Path(only_dir)]
@@ -290,8 +291,9 @@ def firefox(uninstall, force, only_dir=None):
     if not dirs:
         if not notes:
             say("no Firefox found; set the page as your homepage by hand (see the README)", "!")
-        return
+        return 0
     uri = PAGE.as_uri()
+    failed = 0
     for d in dirs:
         try:
             rc = remove_firefox(d) if uninstall else write_firefox(d, uri, force)
@@ -301,8 +303,10 @@ def firefox(uninstall, force, only_dir=None):
             if rc and MAC:
                 say("macOS may block it: allow your terminal under System Settings › Privacy & Security › "
                     "App Management, then run this again.", "!")
+        failed += rc != 0
         if rc == 0 and not uninstall:
             say("restart Firefox completely (quit it, not just close the window) to see it", "→")
+    return failed
 
 
 def main():
@@ -330,8 +334,8 @@ def main():
     make_configs(a.city)
     fetch_now()
     schedule()
-    if not a.no_firefox:
-        firefox(False, a.force)
+    if not a.no_firefox and firefox(False, a.force):
+        sys.exit(f"\nFirefox isn't set up, see above. The page itself: {PAGE.as_uri()}")
     print(f"\nDone. The page itself: {PAGE.as_uri()}")
 
 
