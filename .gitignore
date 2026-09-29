@@ -1,0 +1,8 @@
+# yours: settings, and what news.py writes
+config.js
+feeds.json
+news.js
+news.js.tmp
+og-cache.json
+news.log
+__pycache__/

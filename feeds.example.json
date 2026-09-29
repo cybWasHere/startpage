@@ -1,0 +1,21 @@
+{
+  "perTab": 8,
+  "tabs": {
+    "world": [["BBC", "https://feeds.bbci.co.uk/news/world/rss.xml"],
+              ["Al Jazeera", "https://www.aljazeera.com/xml/rss/all.xml"]],
+    "tech": [["HN", "https://hnrss.org/frontpage"],
+             ["The Verge", "https://www.theverge.com/rss/index.xml"]],
+    "ai": [["Ars Technica", "https://arstechnica.com/ai/feed/"],
+           ["The Verge", "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"],
+           ["TechCrunch", "https://techcrunch.com/category/artificial-intelligence/feed/"]],
+    "games": [["Rock Paper Shotgun", "https://www.rockpapershotgun.com/feed"],
+              ["PC Gamer", "https://www.pcgamer.com/rss/"],
+              ["Eurogamer", "https://www.eurogamer.net/feed"]],
+    "science": [["Ars Technica", "https://arstechnica.com/science/feed/"],
+                ["Quanta", "https://www.quantamagazine.org/feed/"],
+                ["New Scientist", "https://www.newscientist.com/feed/home/"]],
+    "linux": [["Phoronix", "https://www.phoronix.com/rss.php"],
+              ["It's FOSS", "https://news.itsfoss.com/rss/"],
+              ["GamingOnLinux", "https://www.gamingonlinux.com/article_rss.php"]]
+  }
+}
