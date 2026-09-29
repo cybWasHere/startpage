@@ -135,6 +135,7 @@ def load_feeds():
 
 
 def main():
+    sys.stderr.reconfigure(errors="replace")  # feed errors may hold characters a Windows console can't show
     tabs, per_tab = load_feeds()
     news = {}
     for tab, feeds in tabs.items():

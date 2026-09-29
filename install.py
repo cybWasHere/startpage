@@ -23,7 +23,7 @@ MARK = "github.com/cybWasHere/startpage"  # in every Firefox file we write; we n
 LINUX, MAC, WIN = sys.platform.startswith("linux"), sys.platform == "darwin", os.name == "nt"
 
 
-def say(msg, kind="·"):
+def say(msg, kind="*"):
     print(f" {kind} {msg}", flush=True)
 
 
@@ -53,7 +53,7 @@ def make_configs(city):
 # 2. headlines ----------------------------------------------------------------------------------
 
 def fetch_now():
-    r = subprocess.run([sys.executable, str(NEWS)], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(NEWS)], capture_output=True, text=True, errors="replace")
     for line in (r.stderr or "").strip().splitlines():
         say(f"news.py: {line}", "!")
     say("headlines fetched" if r.returncode == 0 else "no headlines yet; the schedule will retry", "+" if r.returncode == 0 else "!")
@@ -305,11 +305,13 @@ def firefox(uninstall, force, only_dir=None):
                     "App Management, then run this again.", "!")
         failed += rc != 0
         if rc == 0 and not uninstall:
-            say("restart Firefox completely (quit it, not just close the window) to see it", "→")
+            say("restart Firefox completely (quit it, not just close the window) to see it", ">")
     return failed
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):  # a Windows console or pipe may be cp1252; never crash on a path or a feed name
+        stream.reconfigure(errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--uninstall", action="store_true", help="remove the schedule and the Firefox files")
     ap.add_argument("--city", help="city for the weather when creating config.js (- for none)")

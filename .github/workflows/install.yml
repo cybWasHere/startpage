@@ -56,7 +56,7 @@ jobs:
 
       - name: Screenshot
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: startpage-${{ runner.os }}
           path: ${{ runner.temp }}/startpage.png
