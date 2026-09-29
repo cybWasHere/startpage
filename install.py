@@ -311,7 +311,8 @@ def firefox(uninstall, force, only_dir=None):
 
 def main():
     for stream in (sys.stdout, sys.stderr):  # a Windows console or pipe may be cp1252; never crash on a path or a feed name
-        stream.reconfigure(errors="replace")
+        if stream:
+            stream.reconfigure(errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--uninstall", action="store_true", help="remove the schedule and the Firefox files")
     ap.add_argument("--city", help="city for the weather when creating config.js (- for none)")
