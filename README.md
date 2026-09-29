@@ -7,6 +7,7 @@ from any RSS feed.**<br>
 One HTML file. No build, no extension, no account. Python only to fetch the headlines.
 
 [![Firefox](https://img.shields.io/badge/Firefox-new%20tab%20%2B%20homepage-ff7139?logo=firefoxbrowser&logoColor=white)](#quick-start)
+[![Install test](https://github.com/cybWasHere/startpage/actions/workflows/install.yml/badge.svg)](https://github.com/cybWasHere/startpage/actions/workflows/install.yml)
 [![Linux · macOS · Windows](https://img.shields.io/badge/linux%20%C2%B7%20macos%20%C2%B7%20windows-one%20installer-1793d1)](#quick-start)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8%2B%2C%20stdlib%20only-3776ab?logo=python&logoColor=white)](#quick-start)
 [![MIT](https://img.shields.io/badge/license-MIT-3da639)](LICENSE)
@@ -186,9 +187,11 @@ with the installer.
 ## The fine print
 
 **Vibecoded.** The code and these docs were written by Claude, an AI coding agent, directed by the
-repo owner, who uses the page every day on Linux (CachyOS, Firefox 156). The Linux install path runs
-on that machine; the macOS and Windows paths follow those systems' documented tools (launchd, Task
-Scheduler, Firefox autoconfig) but haven't been run end to end yet. Read `install.py` before you
+repo owner, who uses the page every day on Linux (CachyOS, Firefox 156). On every push, and weekly,
+[GitHub Actions](.github/workflows/install.yml) runs the installer on fresh Linux, macOS and Windows
+machines, fires the schedule, checks that a headless Firefox starts on the page, then uninstalls and
+checks that nothing is left. What it can't see is the admin prompt, since those machines are already
+admin, so the UAC and App Management steps are the least tested part. Read `install.py` before you
 trust it; it's short.
 
 **Thanks** to [Open-Meteo](https://open-meteo.com) for free weather without keys, and to every site
