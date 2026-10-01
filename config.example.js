@@ -17,7 +17,7 @@ window.STARTPAGE = {
   // Weather from Open-Meteo (free, no account). A city name is looked up once and remembered;
   // for an exact spot use { name: "Home", lat: 48.85, lon: 2.35 }. null hides the widget.
   weather: { city: "London" },
-  units: "metric",          // "metric" (°C, km/h) or "imperial" (°F, mph)
+  units: "metric",          // "metric" (°C) or "imperial" (°F)
 
   clock24: true,            // false: 12-hour clock with am/pm
   seconds: true,            // the small seconds after the minutes

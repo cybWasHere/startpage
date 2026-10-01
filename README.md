@@ -21,14 +21,14 @@ One HTML file. No build, no extension, no account. Python only to fetch the head
 ## What you get
 
 - **A clock you can read from across the room**, and the date under it.
-- **Weather** from [Open-Meteo](https://open-meteo.com) (free, no key): now, feels-like, humidity,
-  wind. Hover it for the week, with rain chances and a temperature bar per day. Icons are animated
-  SVG, and the cloud drifts.
+- **Weather** from [Open-Meteo](https://open-meteo.com) (free, no key): now, feels-like, and when
+  the rain starts or stops. Hover it for the week, with rain chances and a temperature bar per day.
+  Icons are animated SVG, and the cloud drifts.
 - **Your sites as an icon dock**, each on a single key: press `y` for YouTube, Shift+`y` to open it
   in a new tab, `?` to see every key.
 - **News cards in tabs**, from whatever RSS or Atom feeds you list. Every card gets a picture
-  (from the feed, or the article's preview image when the feed has none), and hovering it shows the
-  summary. The page picks how many rows fit your screen, so it never scrolls.
+  (from the feed, or the article's preview image when the feed has none), hovering it shows the
+  summary, and headlines you have already opened are dimmed. The page picks how many rows fit your screen, so it never scrolls.
 - **A lava lamp behind it all**: slow wax blobs in WebGL, drifting through nine dark colour moods
   over six hours. The little lamp at the bottom right opens a menu: pick one mood, let it drift, or
   turn it off. A new mood melts in, and the page remembers your pick.
@@ -120,7 +120,7 @@ window.STARTPAGE = {
     ["GitHub",  "https://github.com",      "g"],
   ],
   weather: { city: "Lyon" },   // or { name: "Home", lat: 45.76, lon: 4.84 }, or null
-  units: "metric",             // or "imperial" for °F and mph
+  units: "metric",             // or "imperial" for °F
   clock24: true,               // false for 1:42 pm
   seconds: true,
   locale: "",                  // date language like "fr-FR"; "" follows the browser
