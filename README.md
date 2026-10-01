@@ -28,11 +28,17 @@ One HTML file. No build, no extension, no account. Python only to fetch the head
   in a new tab, `?` to see every key.
 - **News cards in tabs**, from whatever RSS or Atom feeds you list. Every card gets a picture
   (from the feed, or the article's preview image when the feed has none), hovering it shows the
-  summary, and headlines you have already opened are dimmed. The page picks how many rows fit your screen, so it never scrolls.
+  summary, and headlines you have already opened are dimmed. The page picks how many rows fit your
+  screen, so it never scrolls.
 - **A lava lamp behind it all**: slow wax blobs in WebGL, drifting through nine dark colour moods
   over six hours. The little lamp at the bottom right opens a menu: pick one mood, let it drift, or
   turn it off. A new mood melts in, and the page remembers your pick.
   It's a port of a KDE Plasma wallpaper, so the page and the desktop can match.
+- **Rain on a button**: real, steady rain that loops without a seam, with distant thunder rolling
+  over it at random, so it never comes round the same way. The cloud next to the lamp starts it (or
+  press `r`); scroll over it for the volume. It keeps raining while you
+  browse: the tab that rains opens links in new tabs, and every other start page shows the cloud
+  lit and can stop it.
 - **Optional "now playing" card** for [Pear Desktop](https://github.com/pear-devs/pear-desktop) or
   a browser video, with [obs-pear-remote](https://github.com/cybWasHere/obs-pear-remote)'s server.
 
@@ -125,6 +131,7 @@ window.STARTPAGE = {
   seconds: true,
   locale: "",                  // date language like "fr-FR"; "" follows the browser
   lava: { on: true, mood: "", cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
+  rain: true,                  // false hides the rain button; { thunder: false } is rain only
   nowPlaying: null,
 };
 ```
@@ -174,6 +181,15 @@ with the installer.
 - **The lava lamp** renders at half resolution and 30 fps (it's all soft gradients, so it looks the
   same), and stops whenever the tab is in the background. With *reduce motion* set in your system,
   it draws one still frame. No WebGL? The button just doesn't appear.
+- **The rain** is a recording, not a generator: all of it is cut from "Rain on Concrete during storm
+  with thunder" by Dakendzor on
+  [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Rain_on_Concrete_during_storm_with_thunder.wav).
+  The bed is four minutes of the storm's steady rain, joined into a loop whose end runs into its
+  start. Ten thunder rolls are kept apart from it and played every 5 to 43 seconds, each time at a
+  different distance, pitch and side. It plays through Web Audio, so the loop point is exact to the
+  sample and the browser doesn't count it as a media player: your play/pause key and "now playing"
+  widgets keep following your music. `rain.js` (7 MB) is only loaded when you first press the
+  button. `rain: { thunder: false }` in `config.js` keeps the rain and drops the thunder.
 - **Updating:** `git pull`. Your `config.js` and `feeds.json` are untouched. Rerun `install.py`
   only if you moved the folder.
 - **Uninstall:** `python3 install.py --uninstall`, restart Firefox, delete the folder.
@@ -205,4 +221,7 @@ trust it; it's short.
 **Thanks** to [Open-Meteo](https://open-meteo.com) for free weather without keys, and to every site
 that still publishes an RSS feed.
 
-**License.** MIT, see [LICENSE](LICENSE). The headlines, images and icons belong to their publishers.
+**License.** MIT, see [LICENSE](LICENSE), except `rain.js`: those recordings are adapted from
+"Rain on Concrete during storm with thunder" by Dakendzor and are
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) like their source. The headlines,
+images and icons belong to their publishers.

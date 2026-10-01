@@ -29,6 +29,10 @@ window.STARTPAGE = {
   // Midnight Teal, Ultraviolet, Smoke & Ice.
   lava: { on: true, mood: "", cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
 
+  // The rain button next to the lamp (or the r key, unless a link uses it): steady rain with distant
+  // thunder. false hides the button; { thunder: false } keeps the rain and drops the thunder.
+  rain: true,
+
   // Optional "now playing" card. Endpoints that answer JSON, polled every 4 s:
   //   video: { id, title, author, url, cover } (obs-pear-remote's extras/serve.py serves /mpris.json)
   //   pear:  Pear Desktop's Amuse plugin, http://127.0.0.1:9863/query
