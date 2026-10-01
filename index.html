@@ -575,11 +575,12 @@ function lavaChoose(choice, save) {
     menu.append(b);
   }
   const buttons = () => [...menu.querySelectorAll("button")];
-  function open() {
+  // consts, not function declarations: those would leak out of this block and replace window.open and window.close
+  const open = () => {
     menu.hidden = false; ui.classList.add("open"); btn.setAttribute("aria-expanded", "true");
     (menu.querySelector('[aria-checked="true"]') || buttons()[0]).focus();
-  }
-  function close() { menu.hidden = true; ui.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); }
+  };
+  const close = () => { menu.hidden = true; ui.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); };
   btn.onclick = () => menu.hidden ? open() : close();
   document.addEventListener("pointerdown", e => { if (!menu.hidden && !ui.contains(e.target)) close(); });
   ui.addEventListener("keydown", e => {
