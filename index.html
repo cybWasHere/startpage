@@ -472,7 +472,7 @@ const MOODS = [  // [name, base, A, B, C]
   ["Smoke & Ice", "#0e1013", "#3a5a78", "#5a5a80", "#2a6f8a"],
 ];
 const LAVA_FRAG = `precision mediump float;
-uniform float time, brightness, sizeScale, haze, kick;
+uniform float time, brightness, sizeScale, haze, kick, fusion;   // fusion: 1 while music plays, 0 is the plain blend
 uniform vec2 resolution;
 uniform vec3 base, colA, colB, colC, bands;   // kick and bands (bass, mids, highs) are the music, 0..1
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -505,7 +505,7 @@ void main() {
   // own, most where they meet half and half. Only the wax turns: the haze keeps the plain blend,
   // or the new colour leaks out as a halo on the background
   vec3 plain = tint;
-  vec3 fuse = 4.0 * share * share.yzx * smoothstep(0.12, 0.45, min(wax, wax.yzx));
+  vec3 fuse = fusion * 4.0 * share * share.yzx * smoothstep(0.12, 0.45, min(wax, wax.yzx));
   float fused = clamp(fuse.x + fuse.y + fuse.z, 0.0, 1.0);
   tint = hueTurn(tint, dot(fuse, vec3(1.75, -1.75, 3.14)));
   float grey = (tint.r + tint.g + tint.b) / 3.0;
@@ -553,7 +553,7 @@ function lavaInit() {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);  // one triangle covers the screen
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  for (const n of ["time", "brightness", "sizeScale", "haze", "kick", "bands", "resolution", "base", "colA", "colB", "colC"]) lava.u[n] = gl.getUniformLocation(pr, n);
+  for (const n of ["time", "brightness", "sizeScale", "haze", "kick", "fusion", "bands", "resolution", "base", "colA", "colB", "colC"]) lava.u[n] = gl.getUniformLocation(pr, n);
   lava.gl = gl;
   return true;
 }
@@ -575,7 +575,7 @@ function lavaDraw() {
   lava.shown = pal;
   gl.uniform1f(u.time, lava.time); gl.uniform1f(u.brightness, LAVA.brightness);
   gl.uniform1f(u.sizeScale, L.sizeScale); gl.uniform1f(u.haze, L.haze + 0.05 * lava.live + 0.06 * lava.ears.v[4]);
-  gl.uniform1f(u.kick, lava.ears.v[3]); gl.uniform3fv(u.bands, lava.ears.v.slice(0, 3));
+  gl.uniform1f(u.kick, lava.ears.v[3]); gl.uniform1f(u.fusion, lava.live); gl.uniform3fv(u.bands, lava.ears.v.slice(0, 3));
   gl.uniform2f(u.resolution, w, h);
   ["base", "colA", "colB", "colC"].forEach((n, i) => gl.uniform3fv(u[n], pal[i]));
   gl.drawArrays(gl.TRIANGLES, 0, 3);
