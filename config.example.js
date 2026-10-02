@@ -26,8 +26,11 @@ window.STARTPAGE = {
   // Lava lamp background. The lamp button at the bottom right picks a mood or turns it off, and the
   // page remembers that pick; these are only the starting values. mood: "" drifts through all nine
   // over cycleHours, or name one: Nebula, Deep Sea, Aurora, Twilight, Ember, Rose Dusk,
-  // Midnight Teal, Ultraviolet, Smoke & Ice.
-  lava: { on: true, mood: "", cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
+  // Midnight Teal, Ultraviolet, Smoke & Ice. music: while Pear plays (nowPlaying.pear below), a
+  // drifting lamp takes its colours from the album cover; false keeps it on the moods.
+  // audio: "ws://127.0.0.1:9873" makes the wax move to the sound itself, if you run something there
+  // that sends the text "bass mid high kick level" (five numbers, 0 to 1) many times a second.
+  lava: { on: true, mood: "", music: true, cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
 
   // The rain button next to the lamp (or the r key, unless a link uses it): steady rain with distant
   // thunder. false hides the button; { thunder: false } keeps the rain and drops the thunder.

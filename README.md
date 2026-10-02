@@ -32,7 +32,13 @@ One HTML file. No build, no extension, no account. Python only to fetch the head
   screen, so it never scrolls.
 - **A lava lamp behind it all**: slow wax blobs in WebGL, drifting through nine dark colour moods
   over six hours. The little lamp at the bottom right opens a menu: pick one mood, let it drift, or
-  turn it off. A new mood melts in, and the page remembers your pick.
+  turn it off. A new mood melts in, and the page remembers your pick. With the "now playing" card
+  set up for Pear, a drifting lamp follows the music: it takes the colours of the album cover
+  (toned down to the moods' darkness) and moves a touch livelier, then settles back when the music
+  stops. A mood you picked keeps its colours. Point `lava.audio` at a WebSocket that sends
+  `bass mid high kick level` (five numbers from 0 to 1, many times a second) and the wax moves to
+  the sound itself: each colour swells with its own band, kicks shove it, louder flows faster. No
+  such server ships with the page yet.
   It's a port of a KDE Plasma wallpaper, so the page and the desktop can match.
 - **Rain on a button**: real, steady rain that loops without a seam, with distant thunder rolling
   over it at random, so it never comes round the same way. The cloud next to the lamp starts it (or
@@ -130,7 +136,7 @@ window.STARTPAGE = {
   clock24: true,               // false for 1:42 pm
   seconds: true,
   locale: "",                  // date language like "fr-FR"; "" follows the browser
-  lava: { on: true, mood: "", cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
+  lava: { on: true, mood: "", music: true, cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
   rain: true,                  // false hides the rain button; { thunder: false } is rain only
   nowPlaying: null,
 };
