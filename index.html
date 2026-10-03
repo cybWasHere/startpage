@@ -197,6 +197,10 @@
   /* lava lamp background (WebGL) and its on/off button */
   #lava { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; display: none; }
   body.lava #lava { display: block; }
+  /* see-through: nothing painted behind the page, for a browser that shows its window through it
+     (see the README). Anywhere else the dark colour scheme keeps the empty page dark, not white. */
+  html.glass { color-scheme: dark; }
+  html.glass body { background: none; }
   #lavaui { position: fixed; right: 14px; bottom: 14px; z-index: 6; }
   #lavaui[hidden] { display: none; }
   #lavabtn, #rainbtn {
@@ -693,11 +697,13 @@ function lavaMusic(track) {
 }
 // choice: "off", "drift" or a mood name; remembered per browser
 function lavaChoose(choice, save) {
-  if (choice !== "off") {
+  const lamp = choice !== "off" && choice !== "glass";
+  if (lamp) {
     if (lava.on && lava.shown && choice !== lava.mood && !REDUCED) lava.fade = { from: lava.shown, at: performance.now(), ms: 1200 };
     lava.mood = choice; lava.look = null;
   }
-  lavaSet(choice !== "off");
+  document.documentElement.classList.toggle("glass", choice === "glass");
+  lavaSet(lamp);
   for (const b of document.querySelectorAll("#lavamenu button")) b.setAttribute("aria-checked", b.dataset.v === choice);
   if (save) try { localStorage.setItem(LAVA_KEY, choice); } catch {}
 }
@@ -707,6 +713,7 @@ function lavaChoose(choice, save) {
   const swatch = m => `radial-gradient(circle at 30% 34%, ${m[2]} 0 20%, transparent 50%), radial-gradient(circle at 70% 60%, ${m[3]} 0 18%, transparent 48%), ` +
     `radial-gradient(circle at 36% 80%, ${m[4]} 0 10%, transparent 38%), ${m[1]}`;
   const items = [["off", "Off", "linear-gradient(135deg, transparent 44%, var(--dim) 44% 56%, transparent 56%), var(--bg)"],
+    ["glass", "See-through", "linear-gradient(135deg, rgba(255,255,255,.3), rgba(255,255,255,.03) 60%)"],
     ["drift", "Drift through all", `conic-gradient(${MOODS.map(m => m[2]).join(", ")}, ${MOODS[0][2]})`], null,
     ...MOODS.map(m => [m[0], m[0], swatch(m)])];
   for (const it of items) {
@@ -738,10 +745,10 @@ function lavaChoose(choice, save) {
   });
   let saved = null; try { saved = localStorage.getItem(LAVA_KEY); } catch {}
   if (saved === "on") saved = "drift";  // before the mood menu, the button only stored on/off
-  const valid = v => v === "off" || v === "drift" || MOODS.some(m => m[0] === v);
+  const valid = v => v === "off" || v === "glass" || v === "drift" || MOODS.some(m => m[0] === v);
   const cfgMood = MOODS.find(m => m[0].toLowerCase() === String(LAVA.mood).toLowerCase())?.[0];
   ui.hidden = false;
-  lavaChoose(valid(saved) ? saved : LAVA.on === false ? "off" : cfgMood || "drift", false);
+  lavaChoose(valid(saved) ? saved : LAVA.on === false ? "off" : LAVA.mood === "glass" ? "glass" : cfgMood || "drift", false);
 }
 
 // rain: a four-minute loop of steady rain, with distant thunder rolling over it at random, so the

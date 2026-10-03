@@ -40,6 +40,8 @@ One HTML file. No build, no extension, no account. Python only to fetch the head
   the sound itself: each colour swells with its own band, kicks shove it, louder flows faster. No
   such server ships with the page yet.
   It's a port of a KDE Plasma wallpaper, so the page and the desktop can match.
+  *See-through* in the same menu paints no background at all, for a Firefox set up to show its
+  window through the page ([how](#see-through-background)); anywhere else it is a plain dark page.
 - **Rain on a button**: real, steady rain that loops without a seam, with distant thunder rolling
   over it at random, so it never comes round the same way. The cloud next to the lamp starts it (or
   press `r`); scroll over it for the volume. It keeps raining while you
@@ -199,6 +201,24 @@ with the installer.
 - **Updating:** `git pull`. Your `config.js` and `feeds.json` are untouched. Rerun `install.py`
   only if you moved the folder.
 - **Uninstall:** `python3 install.py --uninstall`, restart Firefox, delete the folder.
+
+## See-through background
+
+*See-through* in the lamp menu (or `lava: { mood: "glass" }`) leaves the page without a background.
+That only shows something on a desktop that already draws Firefox's window translucent (a
+compositor with blur, and a `userChrome.css` that clears the window's own background). Then:
+
+1. In `about:config`, set `browser.tabs.allow_transparent_browser` to `true` and restart Firefox.
+2. In `userChrome.css`, clear the backdrop Firefox paints behind the page, for this page's tab only:
+   ```css
+   body:has(.tabbrowser-tab[selected][label="New Tab"]) #tabbrowser-tabpanels {
+     --tabpanel-background-color: transparent !important;
+   }
+   ```
+
+The setting applies to every tab: a site that sets no background of its own (plain text files,
+some very old pages) is then drawn on `--tabpanel-background-color` instead of white, so keep that
+colour readable.
 
 ## Troubleshooting
 
