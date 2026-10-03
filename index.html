@@ -462,8 +462,9 @@ if (NP.video || NP.pear) { nowPlaying(); setTimeout(nowPlaying, 1500); setInterv
 // a drifting lamp takes its colours from the album cover instead and moves a touch livelier. And
 // with lava.audio (a WebSocket sending "bass mid high kick level", each 0..1, many times a second)
 // the wax moves to the sound itself.
-const LAVA = { speed: 1, brightness: 1, cycleHours: 6, mood: "", music: true, audio: "", fps: 30, scale: 0.5, ...CFG.lava };
+const LAVA = { speed: 1, brightness: 1, cycleHours: 6, mood: "", music: true, audio: "", fps: 30, scale: 0.5, fusion: "neighbours", ...CFG.lava };
 const LAVA_KEY = "startpage.lava";
+const FUSIONS = ["neighbours", "opposite", "third"];   // what fusing wax turns to; the shader explains each
 const MOODS = [  // [name, base, A, B, C]
   ["Nebula", "#100f2a", "#7a2a9e", "#c2306a", "#2a6f9e"], ["Deep Sea", "#0a1422", "#1e5f8c", "#2a86b8", "#264a8a"],
   ["Aurora", "#0a161a", "#1b7f86", "#3fa36b", "#4a3f9e"], ["Twilight", "#141024", "#5a3fae", "#2f6fb8", "#a0407a"],
@@ -472,7 +473,7 @@ const MOODS = [  // [name, base, A, B, C]
   ["Smoke & Ice", "#0e1013", "#3a5a78", "#5a5a80", "#2a6f8a"],
 ];
 const LAVA_FRAG = `precision mediump float;
-uniform float time, brightness, sizeScale, haze, kick, fusion;   // fusion: 1 while music plays, 0 is the plain blend
+uniform float time, brightness, sizeScale, haze, kick, fusion, fuseStyle;   // fusion: 1 while music plays, 0 is the plain blend
 uniform vec2 resolution;
 uniform vec3 base, colA, colB, colC, bands;   // kick and bands (bass, mids, highs) are the music, 0..1
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -480,6 +481,7 @@ vec3 hueTurn(vec3 c, float a) {   // around the grey axis: same lightness, anoth
   const vec3 k = vec3(0.57735);
   return c * cos(a) + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - cos(a));
 }
+float chroma(vec3 c) { return length(c - (c.r + c.g + c.b) / 3.0); }   // how far from grey
 void main() {
   vec2 uv = vec2(gl_FragCoord.x, resolution.y - gl_FragCoord.y) / resolution;
   float s = min(resolution.x, resolution.y);
@@ -501,13 +503,23 @@ void main() {
   float field = wax.x + wax.y + wax.z;
   vec3 share = wax / max(field, 1e-4);
   vec3 tint = colA * share.x + colB * share.y + colC * share.z;
-  // two colours of wax fusing make a third: each pair (AB, BC, CA) turns the blend to a hue of its
-  // own, most where they meet half and half. Only the wax turns: the haze keeps the plain blend,
-  // or the new colour leaks out as a halo on the background
+  // two colours of wax fusing make a new one, most where they meet half and half (fuseStyle picks
+  // which: a neighbour, the palette's opposite, or the third wax). Only the wax turns: the haze keeps
+  // the plain blend, or the new colour leaks out as a halo on the background
   vec3 plain = tint;
   vec3 fuse = fusion * 4.0 * share * share.yzx * smoothstep(0.12, 0.45, min(wax, wax.yzx));
   float fused = clamp(fuse.x + fuse.y + fuse.z, 0.0, 1.0);
-  tint = hueTurn(tint, dot(fuse, vec3(1.75, -1.75, 3.14)));
+  if (fuseStyle < 0.5) {          // neighbours: each pair turns the blend a little way round the wheel
+    tint = hueTurn(tint, dot(fuse, vec3(0.5, -0.5, 0.9)));
+  } else if (fuseStyle < 1.5) {   // opposite: every pair sparks the one accent across the wheel from the palette
+    vec3 acc = hueTurn((colA + colB + colC) / 3.0, 3.14159);
+    float ag = (acc.r + acc.g + acc.b) / 3.0;
+    float vivid = max(chroma(colA), max(chroma(colB), chroma(colC)));   // as vivid as the most vivid wax
+    acc = max(ag + (acc - ag) * min(vivid / max(chroma(acc), 1e-3), 4.0), 0.0);
+    tint = mix(tint, acc, smoothstep(0.3, 0.7, fused));   // steep, or the way there is a grey ring
+  } else {                        // third: two waxes fusing show the colour of the one that is missing
+    tint = mix(tint, (fuse.x * colC + fuse.y * colA + fuse.z * colB) / max(fuse.x + fuse.y + fuse.z, 1e-4), fused);
+  }
   float grey = (tint.r + tint.g + tint.b) / 3.0;
   tint = max(grey + (tint - grey) * (1.0 + 0.5 * fused), 0.0) * (1.0 + 0.3 * fused);
   float body = smoothstep(0.92, 1.08, field);
@@ -553,7 +565,7 @@ function lavaInit() {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);  // one triangle covers the screen
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  for (const n of ["time", "brightness", "sizeScale", "haze", "kick", "fusion", "bands", "resolution", "base", "colA", "colB", "colC"]) lava.u[n] = gl.getUniformLocation(pr, n);
+  for (const n of ["time", "brightness", "sizeScale", "haze", "kick", "fusion", "fuseStyle", "bands", "resolution", "base", "colA", "colB", "colC"]) lava.u[n] = gl.getUniformLocation(pr, n);
   lava.gl = gl;
   return true;
 }
@@ -575,7 +587,7 @@ function lavaDraw() {
   lava.shown = pal;
   gl.uniform1f(u.time, lava.time); gl.uniform1f(u.brightness, LAVA.brightness);
   gl.uniform1f(u.sizeScale, L.sizeScale); gl.uniform1f(u.haze, L.haze + 0.05 * lava.live + 0.06 * lava.ears.v[4]);
-  gl.uniform1f(u.kick, lava.ears.v[3]); gl.uniform1f(u.fusion, lava.live); gl.uniform3fv(u.bands, lava.ears.v.slice(0, 3));
+  gl.uniform1f(u.kick, lava.ears.v[3]); gl.uniform1f(u.fusion, lava.live); gl.uniform1f(u.fuseStyle, Math.max(0, FUSIONS.indexOf(LAVA.fusion))); gl.uniform3fv(u.bands, lava.ears.v.slice(0, 3));
   gl.uniform2f(u.resolution, w, h);
   ["base", "colA", "colB", "colC"].forEach((n, i) => gl.uniform3fv(u[n], pal[i]));
   gl.drawArrays(gl.TRIANGLES, 0, 3);

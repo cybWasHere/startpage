@@ -30,6 +30,8 @@ window.STARTPAGE = {
   // drifting lamp takes its colours from the album cover; false keeps it on the moods.
   // audio: "ws://127.0.0.1:9873" makes the wax move to the sound itself, if you run something there
   // that sends the text "bass mid high kick level" (five numbers, 0 to 1) many times a second.
+  // fusion: what two colours of wax turn to where they merge while music plays: "neighbours" (a hue
+  // next door), "opposite" (one accent across the colour wheel) or "third" (the third wax's colour).
   lava: { on: true, mood: "", music: true, cycleHours: 6, speed: 1, brightness: 1, fps: 30 },
 
   // The rain button next to the lamp (or the r key, unless a link uses it): steady rain with distant
