@@ -201,6 +201,10 @@
      (see the README). Anywhere else the dark colour scheme keeps the empty page dark, not white. */
   html.glass { color-scheme: dark; }
   html.glass body { background: none; }
+  /* the cards too: a thin light veil instead of a solid colour. Menus, panels and tooltips, which
+     open over other things, stay solid. */
+  html.glass { --surface: rgba(255,255,255,.05); --hover: rgba(255,255,255,.11); --line: rgba(255,255,255,.1); }
+  html.glass #links a::after { background: #1e2124; }
   #lavaui { position: fixed; right: 14px; bottom: 14px; z-index: 6; }
   #lavaui[hidden] { display: none; }
   #lavabtn, #rainbtn {
