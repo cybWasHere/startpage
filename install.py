@@ -3,6 +3,8 @@
 
     python3 install.py               install or update (Windows: py install.py)
     python3 install.py --uninstall   undo it; your config.js and feeds.json stay
+    python3 install.py --serve       Linux: open the page from http://127.0.0.1:9875 instead of
+                                     from the file (see serve.py for why you might want that)
 
 It does three things, and running it again is harmless:
   1. creates config.js and feeds.json from the examples, if you don't have them yet;
@@ -19,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 PAGE = HERE / "index.html"
 NEWS = HERE / "news.py"
 NAME = "startpage-news"
+SERVE = "startpage"  # the user unit that runs serve.py, with --serve
 MARK = "github.com/cybWasHere/startpage"  # in every Firefox file we write; we never touch files without it
 LINUX, MAC, WIN = sys.platform.startswith("linux"), sys.platform == "darwin", os.name == "nt"
 
@@ -168,6 +171,34 @@ def unschedule():
     say("headline schedule removed", "-")
 
 
+# 2b. a served page, on request -----------------------------------------------------------------
+
+def serve(port):
+    """Run serve.py at login and return the page's address there."""
+    if not LINUX or not shutil.which("systemctl") or run("systemctl", "--user", "show-environment", check=False).returncode:
+        sys.exit(" ! --serve needs a systemd user session (Linux). Without it the page opens from the file, as before.")
+    d = systemd_dir()
+    d.mkdir(parents=True, exist_ok=True)
+    write_fresh(d / f"{SERVE}.service",
+        f"[Unit]\nDescription=Serve the start page on 127.0.0.1:{port} (loopback only)\n\n"
+        f"[Service]\nExecStart=\"{sys.executable}\" \"{HERE / 'serve.py'}\" {port}\nRestart=always\nRestartSec=2\n\n"
+        "[Install]\nWantedBy=default.target\n")
+    run("systemctl", "--user", "daemon-reload")
+    run("systemctl", "--user", "enable", f"{SERVE}.service")
+    run("systemctl", "--user", "restart", f"{SERVE}.service")
+    say(f"systemd user unit {SERVE}.service serves the page on http://127.0.0.1:{port}/", "+")
+    return f"http://127.0.0.1:{port}/"
+
+
+def unserve():
+    unit = systemd_dir() / f"{SERVE}.service"
+    if LINUX and shutil.which("systemctl") and unit.exists():
+        run("systemctl", "--user", "disable", "--now", f"{SERVE}.service", check=False)
+        unit.unlink(missing_ok=True)
+        run("systemctl", "--user", "daemon-reload", check=False)
+        say("the page is no longer served; it opens from the file", "-")
+
+
 # 3. Firefox ------------------------------------------------------------------------------------
 
 def firefox_dirs():
@@ -286,24 +317,23 @@ def elevated(args):
     return subprocess.run(["sudo"] + me).returncode
 
 
-def firefox(uninstall, force, only_dir=None):
+def firefox(uninstall, force, uri=None):
     """Returns how many Firefox folders couldn't be set up."""
     dirs, notes = firefox_dirs()
-    if only_dir:
-        dirs = [Path(only_dir)]
     for n in notes:
         say(n + " See the README for the manual way.", "!")
     if not dirs:
         if not notes:
             say("no Firefox found; set the page as your homepage by hand (see the README)", "!")
         return 0
-    uri = PAGE.as_uri()
+    uri = uri or PAGE.as_uri()
     failed = 0
     for d in dirs:
         try:
             rc = remove_firefox(d) if uninstall else write_firefox(d, uri, force)
         except PermissionError:
-            args = ["--firefox-dir", str(d)] + (["--uninstall"] if uninstall else []) + (["--force"] if force else [])
+            args = (["--firefox-dir", str(d), "--page-uri", uri] + (["--uninstall"] if uninstall else [])
+                    + (["--force"] if force else []))
             rc = elevated(args)
             if rc and MAC:
                 say("macOS may block it: allow your terminal under System Settings › Privacy & Security › "
@@ -323,16 +353,21 @@ def main():
     ap.add_argument("--city", help="city for the weather when creating config.js (- for none)")
     ap.add_argument("--no-firefox", action="store_true", help="leave Firefox alone")
     ap.add_argument("--force", action="store_true", help="replace a mozilla.cfg that some other tool wrote (keeps a .bak)")
+    ap.add_argument("--serve", type=int, nargs="?", const=9875, metavar="PORT",
+                    help="Linux: serve the page on http://127.0.0.1:PORT (9875) and open it from there; "
+                         "run again without it to go back to the file")
     ap.add_argument("--firefox-dir", help=argparse.SUPPRESS)  # the elevated rerun: only touch this folder
+    ap.add_argument("--page-uri", help=argparse.SUPPRESS)     # ... with this address for the page
     a = ap.parse_args()
 
     if a.firefox_dir:
         d = Path(a.firefox_dir)
-        sys.exit(remove_firefox(d) if a.uninstall else write_firefox(d, PAGE.as_uri(), a.force))
+        sys.exit(remove_firefox(d) if a.uninstall else write_firefox(d, a.page_uri or PAGE.as_uri(), a.force))
 
     if a.uninstall:
         print("Removing the start page setup", flush=True)
         unschedule()
+        unserve()
         if not a.no_firefox and firefox(True, False):
             sys.exit("\nFirefox's files are still in place, see above. Run --uninstall again before deleting this folder.")
         say("config.js, feeds.json and this folder are still here; delete the folder to finish")
@@ -342,9 +377,12 @@ def main():
     make_configs(a.city)
     fetch_now()
     schedule()
-    if not a.no_firefox and firefox(False, a.force):
-        sys.exit(f"\nFirefox isn't set up, see above. The page itself: {PAGE.as_uri()}")
-    print(f"\nDone. The page itself: {PAGE.as_uri()}")
+    uri = serve(a.serve) if a.serve else PAGE.as_uri()
+    if not a.serve:
+        unserve()
+    if not a.no_firefox and firefox(False, a.force, uri):
+        sys.exit(f"\nFirefox isn't set up, see above. The page itself: {uri}")
+    print(f"\nDone. The page itself: {uri}")
 
 
 if __name__ == "__main__":
