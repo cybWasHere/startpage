@@ -328,8 +328,8 @@ def main():
     if a.uninstall:
         print("Removing the start page setup", flush=True)
         unschedule()
-        if not a.no_firefox:
-            firefox(True, False)
+        if not a.no_firefox and firefox(True, False):
+            sys.exit("\nFirefox's files are still in place, see above. Run --uninstall again before deleting this folder.")
         say("config.js, feeds.json and this folder are still here; delete the folder to finish")
         return
 
