@@ -18,6 +18,7 @@ A = "{http://www.w3.org/2005/Atom}"
 MEDIA = "{http://search.yahoo.com/mrss/}"
 DC = "{http://purl.org/dc/elements/1.1/}"
 UA = {"User-Agent": "Mozilla/5.0 startpage-news"}
+WEB = re.compile(r"https?://", re.I)
 
 
 def get(url, limit=None):
@@ -93,7 +94,10 @@ def fetch(source, url):
     for i in items:
         i["title"] = text(i["title"], 400)
         i["src"] = source
-    return [i for i in items if i["title"] and i["url"]]
+        i["url"] = i["url"].strip()
+        if not WEB.match(i.get("comments", "")):  # the page opens these: nothing but web links
+            i.pop("comments", None)
+    return [i for i in items if i["title"] and WEB.match(i["url"])]
 
 
 def og_image(url):
