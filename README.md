@@ -116,7 +116,20 @@ Run it again any time; it only redoes what's needed.
 | `--city "Paris"` | set the weather city without being asked (`-` for no weather) |
 | `--no-firefox` | skip step 3, e.g. to set the homepage yourself |
 | `--force` | replace a `mozilla.cfg` another tool wrote |
+| `--serve [PORT]` | Linux: open the page from `http://127.0.0.1:9875` instead of from the file (below) |
 | `--uninstall` | remove the schedule and the Firefox files; your settings stay |
+
+**Served instead of opened as a file (`--serve`).** Opened from the file, the page has no address:
+to any program on your machine its requests come from `null`, exactly like those of a hidden frame
+on any website. A local service that tells the page what is playing can't tell the two apart, so
+the careful ones refuse both ([lavaglass](https://github.com/cybWasHere/lavaglass)'s lamp-audio
+does, and so does obs-pear-remote's `serve.py`). `python3 install.py --serve` gives the page an
+address they can check: a systemd user unit runs `serve.py` on loopback, and Firefox opens
+`http://127.0.0.1:9875/` on new tabs. Then name that address to the service
+(`LAMP_AUDIO_ORIGINS=http://127.0.0.1:9875`, `serve.py --allow-origin http://127.0.0.1:9875`).
+The server answers the page and nobody else: a request from another site is refused, so no page
+can read your `config.js`. What the page remembers (mood, rain volume, last tab) starts fresh
+once, since browsers keep it per address. Run `install.py` without `--serve` to go back.
 
 </details>
 
