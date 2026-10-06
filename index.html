@@ -312,7 +312,7 @@ document.addEventListener("keydown", e => {
   if (e.ctrlKey || e.altKey || e.metaKey || e.target.matches("input,textarea")) return;
   if (e.key === "?") { document.body.classList.toggle("flash"); return; }
   const url = keys[e.key.toLowerCase()];
-  if (!url) { if (e.key.toLowerCase() === RAIN_KEYCAP && !rainBtn.hidden) rainToggle(); return; }
+  if (!url) { if (e.key.toLowerCase() === RAIN_KEYCAP && !rainBtn.hidden && !e.repeat) rainToggle(); return; }
   e.preventDefault();
   go(url, e.shiftKey);
 });
@@ -654,7 +654,7 @@ async function rainStart() {
   RAIN_CH?.postMessage({ on: true, vol: rain.vol });
   if (!rain.gain) {
     rainBtn.classList.add("busy");
-    try {
+    try { await (rain.loading ||= (async () => {  // one load, however often it is toggled meanwhile
       const ctx = rain.ctx || (rain.ctx = new AudioContext());  // made inside the click, so it is allowed to sound
       if (!window.RAIN) await new Promise((ok, no) => { const s = el("script"); s.src = "rain.js"; s.onload = ok; s.onerror = no; document.head.append(s); });
       const sound = async url => ctx.decodeAudioData(await (await fetch(url)).arrayBuffer());
@@ -667,7 +667,7 @@ async function rainStart() {
       rain.gain = gain;
       if (CFG.rain?.thunder !== false)  // the rolls decode behind the rain and join in when ready
         Promise.all(RAIN.thunder.map(sound)).then(rolls => { rain.thunder = rolls; rainThunder(); }, e => console.warn("thunder:", e));
-    } catch (e) {  // no rain.js next to the page, or no audio: no button
+    })()); } catch (e) {  // no rain.js next to the page, or no audio: no button
       console.warn("rain:", e);
       rainBtn.hidden = true;
       return rainStop();
