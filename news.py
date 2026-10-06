@@ -40,8 +40,8 @@ def when(s):
         return 0
 
 
-def text(s, n=320):
-    s = html.unescape(re.sub(r"<[^>]+>", " ", s or ""))
+def text(s, n=320, tags=True):
+    s = html.unescape(re.sub(r"<[^>]+>", " ", s or "") if tags else s or "")
     s = re.sub(r"\s+", " ", s).strip()
     return s if len(s) <= n else s[:n].rsplit(" ", 1)[0] + "…"
 
@@ -92,7 +92,7 @@ def fetch(source, url):
     root = ET.fromstring(get(url))
     items = [parse_item(i) for i in root.iter("item")] + [parse_entry(e) for e in root.iter(A + "entry")]
     for i in items:
-        i["title"] = text(i["title"], 400)
+        i["title"] = text(i["title"], 400, tags=False)  # a title is plain text: "Vec<T>" is not a tag
         i["src"] = source
         i["url"] = i["url"].strip()
         if not WEB.match(i.get("comments", "")):  # the page opens these: nothing but web links
