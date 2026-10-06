@@ -250,8 +250,13 @@ def write_firefox(ff_dir, page_uri, force):
     for p, text in files.items():
         if p in foreign:
             shutil.copy2(p, p.with_name(p.name + ".bak"))
+        made = [d for d in (p.parent, *p.parent.parents) if not d.exists()]
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text, encoding="utf-8")
+        if not WIN:  # written as root under a umask of 077, Firefox couldn't read them
+            p.chmod(0o644)
+            for d in made:
+                d.chmod(0o755)
     say(f"Firefox at {ff_dir} opens the page on new tabs and at start", "+")
     return 0
 
